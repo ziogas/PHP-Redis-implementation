@@ -1,17 +1,17 @@
 PHP Redis implementation
-
 ==============
 
+Simple and lightweight redis implementation, all commands are passed as is, so you have all the freedom to manage redis just like in redis-cli
 
 DOWNLOAD
-========
+--------------
 You could checkout latest version with:
 
     $ git clone git://github.com/ziogas/PHP-Redis-implementation
 
 
 INSTALL
-=======
+--------------
 To install PHP redis:
 
 * Simply copy redis.php to your site and require it from external script
@@ -29,6 +29,5 @@ $field = $redis -> cmd ( 'HGET', 'hash', 'field' ) -> get ();
 
 
 AUTHORS
-=======
-Arminas Žukauskas <arminas@jojo.lt>
-
+-------------
+Arminas Žukauskas <arminas ( at ) jojo ( dot ) lt>
