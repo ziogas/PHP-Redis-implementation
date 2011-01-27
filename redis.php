@@ -15,19 +15,39 @@ class redis_cli
     private $handle = false;
     private $commands = array ();
    
-    public function __construct ( $host = '127.0.0.1', $port = 6379 )
+    public function __construct ( $host = false, $port = false, $silent_fail = false )
     {
-        $this -> handle = fsockopen ( $host, $port, $errno, $errstr );
-
-        if ( !$this -> handle )
+        if ( $host && $port )
         { 
-            return array ( $errno, $errstr );
+            $this -> connect ( $host, $port, $silent_fail );
+        }
+    }
+
+    public function connect ( $host = '127.0.0.1', $port = 6379, $silent_fail = false )
+    {
+        if ( $silent_fail )
+        { 
+            try
+            { 
+                $this -> handle = fsockopen ( $host, $port, $errno, $errstr );
+            } 
+            catch ( Exception $e )
+            { 
+                $this -> handle = false;
+            }
+        }
+        else
+        { 
+            $this -> handle = fsockopen ( $host, $port, $errno, $errstr );
         }
     }
 
     public function __destruct ()
     {
-        fclose ( $this -> handle );
+        if ( is_resource ( $this -> handle ) )
+        { 
+            fclose ( $this -> handle );
+        }
     }
 
     public function commands (  )
@@ -39,7 +59,7 @@ class redis_cli
     {
         if ( !$this -> handle )
         { 
-            return false;
+            return $this;
         }
 
         $args = func_get_args ();
@@ -58,11 +78,21 @@ class redis_cli
 
     public function set ()
     {
+        if ( !$this -> handle )
+        { 
+            return false;
+        }
+
         return $this -> exec ();
     }
 
     public function get ( $line = false )
     {
+        if ( !$this -> handle )
+        { 
+            return false;
+        }
+
         $command = $this -> exec ();
 
         if ( $command )
@@ -87,11 +117,6 @@ class redis_cli
 
     private function exec ()
     {
-        if ( !$this -> handle )
-        { 
-            return false;
-        }
-
         if ( sizeof ( $this -> commands ) < 1 )
         { 
             return null;
