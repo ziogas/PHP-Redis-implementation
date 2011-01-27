@@ -10,7 +10,7 @@
  * $redis -> cmd ( 'SET', 'foo', 'bar' ) -> set ();
  * $foo = $redis -> cmd ( 'GET', 'foo' ) -> get ();
  *
- * $redis -> cmd ( 'HSET', 'hash', 'foo', 'bar' ) -> cmd ( 'HSET', 'hash', 'abc' => 'def' ) -> set ();
+ * $redis -> cmd ( 'HSET', 'hash', 'foo', 'bar' ) -> cmd ( 'HSET', 'hash', 'abc', 'def' ) -> set ();
  * $vals = $redis -> cmd ( 'HVALS', 'hash' ) -> get ( 0 );
  * $vals = $redis -> parse_multibulk_response ( $vals );
  *
