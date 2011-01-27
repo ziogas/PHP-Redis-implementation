@@ -9,6 +9,11 @@
  * $redis = new redis_cli ();
  * $redis -> cmd ( 'SET', 'foo', 'bar' ) -> set ();
  * $foo = $redis -> cmd ( 'GET', 'foo' ) -> get ();
+ *
+ * $redis -> cmd ( 'HSET', 'hash', 'foo', 'bar' ) -> cmd ( 'HSET', 'hash', 'abc' => 'def' ) -> set ();
+ * $vals = $redis -> cmd ( 'HVALS', 'hash' ) -> get ( 0 );
+ * $vals = $redis -> parse_multibulk_response ( $vals );
+ *
  */
 class redis_cli
 { 
@@ -98,15 +103,20 @@ class redis_cli
         if ( $command )
         { 
             $return = trim ( fread ( $this -> handle, 4096 ) );
-            $return = explode ( "\r\n", $return );
 
-            if ( $line && isset ( $return [ $line - 1 ] ) )
+            //return only selected line / last line
+            if ( $line !== 0 )
             { 
-                $return = $return [ $line - 1 ];
-            }
-            else
-            { 
-                $return = end ( $return );
+                $return = explode ( "\r\n", $return );
+
+                if ( $line && isset ( $return [ $line - 1 ] ) )
+                { 
+                    $return = $return [ $line - 1 ];
+                }
+                else
+                { 
+                    $return = end ( $return );
+                }
             }
 
             $return = trim ( $return, "\r\n " );
@@ -127,5 +137,17 @@ class redis_cli
 
         $this -> commands = array ();
         return $command;
+    }
+
+    public function parse_multibulk_response ( $str )
+    {
+        preg_match_all ( '#\$\d+\r\n(.*?)\r\n#mis', $str, $matches );
+        return $matches [ 1 ] ;
+    }
+
+    public function parse_bulk_response ( $str )
+    {
+        preg_match ( '#\$\d+\r\n(.*?)(\r\n)?#Umis', $str, $matches );
+        return $matches [ 1 ] ;
     }
 }
