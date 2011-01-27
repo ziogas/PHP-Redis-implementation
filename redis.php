@@ -141,7 +141,7 @@ class redis_cli
 
     public function parse_multibulk_response ( $str )
     {
-        preg_match_all ( '#\$\d+\r\n(.*?)\r\n#mis', $str, $matches );
+        preg_match_all ( '#\$\d+\r\n(.+)(\r\n)?#mi', $str, $matches );
         return $matches [ 1 ] ;
     }
 
