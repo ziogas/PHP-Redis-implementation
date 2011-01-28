@@ -18,7 +18,13 @@
 class redis_cli
 { 
     private $handle = false;
+    private $host;
+    private $port;
+    private $silent_fail;
+
     private $commands = array ();
+    private $max_response_len = 1048576;
+    private $force_reconnect = false;
    
     public function __construct ( $host = false, $port = false, $silent_fail = false )
     {
@@ -30,6 +36,10 @@ class redis_cli
 
     public function connect ( $host = '127.0.0.1', $port = 6379, $silent_fail = false )
     {
+        $this -> host = $host;
+        $this -> port = $port;
+        $this -> silent_fail = $silent_fail;
+
         if ( $silent_fail )
         { 
             try
@@ -45,6 +55,14 @@ class redis_cli
         { 
             $this -> handle = fsockopen ( $host, $port, $errno, $errstr );
         }
+
+        stream_set_timeout ( $this -> handle, 60 );
+    }
+
+    public function reconnect (  )
+    {
+        $this -> __destruct ();
+        $this -> connect ( $this -> host, $this -> port, $this -> silent_fail );
     }
 
     public function __destruct ()
@@ -102,7 +120,7 @@ class redis_cli
 
         if ( $command )
         { 
-            $return = trim ( fread ( $this -> handle, 4096 ) );
+            $return = fread ( $this -> handle, $this -> max_response_len );
 
             //return only selected line / last line
             if ( $line !== 0 )
@@ -120,6 +138,11 @@ class redis_cli
             }
 
             $return = trim ( $return, "\r\n " );
+
+            if ( $this -> force_reconnect )
+            { 
+                $this -> reconnect ();
+            }
 
             return $return === '$-1' ? null : $return;
         }
@@ -139,15 +162,35 @@ class redis_cli
         return $command;
     }
 
+    public function set_max_response_len ( $len )
+    {
+        $this -> max_response_len = $len;
+        return $this;
+    }
+
+    public function set_force_reconnect ( $flag )
+    {
+        $this -> force_reconnect = $flag;
+        return $this;
+    }
+
     public function parse_multibulk_response ( $str )
     {
         preg_match_all ( '#\$\d+\r\n(.+)(\r\n)?#mi', $str, $matches );
-        return $matches [ 1 ] ;
+
+        $return = array ();
+
+        foreach ( $matches [ 1 ] as $match )
+        { 
+            $return [] = trim ( $match );
+        }
+
+        return $return;
     }
 
     public function parse_bulk_response ( $str )
     {
         preg_match ( '#\$\d+\r\n(.*?)(\r\n)?#Umis', $str, $matches );
-        return $matches [ 1 ] ;
+        return trim ( $matches [ 1 ] ) ;
     }
 }
