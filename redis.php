@@ -31,7 +31,6 @@ class redis_cli
     private $silent_fail;
 
     private $commands = array ();
-    private $max_response_len = 1048576;
     private $force_reconnect = false;
     private $timeout = 180;
    
