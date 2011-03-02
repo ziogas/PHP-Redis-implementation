@@ -1,4 +1,4 @@
-PHP Redis implementation
+PHP Redis implementation V2.0
 ==============
 
 Simple and lightweight redis implementation, all commands are passed as is, so you have all the freedom to manage redis just like in redis-cli
@@ -26,6 +26,11 @@ $redis -> cmd ( 'SET', 'foo', 'bar' )
 
 $foo = $redis -> cmd ( 'GET', 'foo' ) -> get ();
 $field = $redis -> cmd ( 'HGET', 'hash', 'field' ) -> get ();
+
+
+LICENSE
+--------------
+LGPL
 
 
 AUTHORS

@@ -3,7 +3,7 @@
 /**
  * Very simple Redis implementation, all commands passed in cli format
  * Add commands via cmd ( $command [, $variable1 [, $variable2 ] ] ) method
- * Fire commands via get () or set () methods ( first one will return output, usefull for get operations )
+ * Fire commands via exec () o set () methods ( first one will return output, usefull for get operations )
  *
  * Usage:
  * $redis = new redis_cli ();
@@ -11,12 +11,20 @@
  * $foo = $redis -> cmd ( 'GET', 'foo' ) -> get ();
  *
  * $redis -> cmd ( 'HSET', 'hash', 'foo', 'bar' ) -> cmd ( 'HSET', 'hash', 'abc', 'def' ) -> set ();
- * $vals = $redis -> cmd ( 'HVALS', 'hash' ) -> get ( 0 );
- * $vals = $redis -> parse_multibulk_response ( $vals );
+ * $vals = $redis -> cmd ( 'HVALS', 'hash' ) -> get ();
+ *
+ * $redis -> cmd -> ( 'KEYS', 'online*' );
+ * $total_online = $redis -> get_len ();
  *
  */
 class redis_cli
 { 
+    const INTEGER = ':';
+    const INLINE = '+';
+    const BULK = '$';
+    const MULTIBULK = '*';
+    const ERROR = '-';
+
     private $handle = false;
     private $host;
     private $port;
@@ -25,6 +33,7 @@ class redis_cli
     private $commands = array ();
     private $max_response_len = 1048576;
     private $force_reconnect = false;
+    private $timeout = 180;
    
     public function __construct ( $host = false, $port = false, $silent_fail = false )
     {
@@ -42,11 +51,9 @@ class redis_cli
 
         if ( $silent_fail )
         { 
-            try
-            { 
-                $this -> handle = fsockopen ( $host, $port, $errno, $errstr );
-            } 
-            catch ( Exception $e )
+            $this -> handle = @fsockopen ( $host, $port, $errno, $errstr );
+
+            if ( !$this ->  handle )
             { 
                 $this -> handle = false;
             }
@@ -56,7 +63,10 @@ class redis_cli
             $this -> handle = fsockopen ( $host, $port, $errno, $errstr );
         }
 
-        stream_set_timeout ( $this -> handle, 60 );
+        if ( is_resource ( $this -> handle ) )
+        { 
+            stream_set_timeout ( $this -> handle, $this -> timeout );
+        }
     }
 
     public function reconnect (  )
@@ -73,7 +83,7 @@ class redis_cli
         }
     }
 
-    public function commands (  )
+    public function commands ()
     {
         return $this -> commands;
     }
@@ -106,7 +116,14 @@ class redis_cli
             return false;
         }
 
-        return $this -> exec ();
+        $return = $this -> exec ();
+
+        if ( $this -> force_reconnect )
+        { 
+            $this -> reconnect ();
+        }
+
+        return fgets ( $this -> handle, 32 );
     }
 
     public function get ( $line = false )
@@ -119,33 +136,95 @@ class redis_cli
         $command = $this -> exec ();
 
         if ( $command )
-        { 
-            $return = fread ( $this -> handle, $this -> max_response_len );
+        {
+            $return = trim ( fgets ( $this -> handle, 1024 ) );
+            $char = substr ( $return, 0, 1 );
+            $return = substr ( $return, 1 );
 
-            //return only selected line / last line
-            if ( $line !== 0 )
-            { 
-                $return = explode ( "\r\n", $return );
-
-                if ( $line && isset ( $return [ $line - 1 ] ) )
+            if ( $char === self::INLINE || $char === self::INTEGER || $char === self::ERROR )
+            {
+                if ( $this -> force_reconnect )
                 { 
-                    $return = $return [ $line - 1 ];
+                    $this -> reconnect ();
+                }
+
+                //we dont need anything do do
+                return $return;
+            }
+            elseif ( $char === self::BULK )
+            { 
+                if ( $return === '-1' )
+                { 
+                    $return = null;
                 }
                 else
                 { 
-                    $return = end ( $return );
+                    $return = $this -> read_bulk_response ( $return );
                 }
-            }
 
-            $return = trim ( $return, "\r\n " );
+                if ( $this -> force_reconnect )
+                { 
+                    $this -> reconnect ();
+                }
+
+                return $return;
+
+            }
+            elseif ( $char === self::MULTIBULK )
+            { 
+                if ( $return === '-1')
+                {
+                    return null;
+                }
+
+                $response = array ();
+
+                for ( $i = 0; $i < $return; $i++ )
+                {
+                    $tmp = trim ( fgets ( $this -> handle, 1024 ) );
+
+                    if ( $tmp === '-1' )
+                    {
+                        $response [] = null;
+                    }
+                    else
+                    {
+                        $response [] = $this -> read_bulk_response ( $tmp );
+                    }
+                }
+
+                if ( $this -> force_reconnect )
+                { 
+                    $this -> reconnect ();
+                }
+
+                return $response;
+            }
 
             if ( $this -> force_reconnect )
             { 
                 $this -> reconnect ();
             }
 
-            return $return === '$-1' ? null : $return;
+            return false;
         }
+    }
+
+    public function get_len ()
+    {
+        if ( !$this -> handle )
+        { 
+            return false;
+        }
+
+        $command = $this -> exec ();
+
+        if ( $command )
+        {
+            $return = explode ( "\r\n", trim ( fgets ( $this -> handle, 32 ) ) );
+        }
+
+        return substr ( $return [ 0 ], 1 );
     }
 
     private function exec ()
@@ -160,12 +239,6 @@ class redis_cli
 
         $this -> commands = array ();
         return $command;
-    }
-
-    public function set_max_response_len ( $len )
-    {
-        $this -> max_response_len = $len;
-        return $this;
     }
 
     public function set_force_reconnect ( $flag )
@@ -192,5 +265,27 @@ class redis_cli
     {
         preg_match ( '#\$\d+\r\n(.*?)(\r\n)?#Umis', $str, $matches );
         return trim ( $matches [ 1 ] ) ;
+    }
+
+    private function read_bulk_response ( $tmp )
+    { 
+        $response = null;
+
+        $read = 0;
+        $size = substr ( $tmp, 1 );
+
+        while ( $read < $size )
+        {
+            $diff = $size - $read;
+
+            $block_size = $diff > 2048 ? 2048 : $diff;
+
+            $response .= fread ( $this -> handle, $block_size );
+            $read += $block_size;
+        }
+
+        fread ( $this -> handle, 2 );
+
+        return $response;
     }
 }
