@@ -137,6 +137,7 @@ class redis_cli
         if ( $command )
         {
             $return = trim ( fgets ( $this -> handle, 1024 ) );
+
             $char = substr ( $return, 0, 1 );
             $return = substr ( $return, 1 );
 
@@ -146,12 +147,12 @@ class redis_cli
                 { 
                     $this -> reconnect ();
                 }
-
                 //we dont need anything do do
                 return $return;
             }
             elseif ( $char === self::BULK )
             { 
+                
                 if ( $return === '-1' )
                 { 
                     $return = null;
@@ -271,7 +272,7 @@ class redis_cli
         $response = null;
 
         $read = 0;
-        $size = substr ( $tmp, 1 );
+        $size = strlen ( $tmp ) > 1 ? substr ( $tmp, 1 ) : $tmp;
 
         while ( $read < $size )
         {
