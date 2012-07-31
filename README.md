@@ -30,7 +30,7 @@ $field = $redis -> cmd ( 'HGET', 'hash', 'field' ) -> get ();
 
 LICENSE
 --------------
-LGPL
+MIT
 
 
 AUTHORS
