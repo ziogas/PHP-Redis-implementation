@@ -347,7 +347,7 @@ class redis_cli
         $response = null;
 
         $read = 0;
-        $size = strlen ( $tmp ) > 1 ? substr ( $tmp, 1 ) : $tmp;
+        $size = ( ( strlen ( $tmp ) > 1 && substr ( $tmp, 0, 1 ) === self::BULK ) ? substr ( $tmp, 1 ) : $tmp );
 
         while ( $read < $size )
         {
