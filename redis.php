@@ -355,8 +355,15 @@ class redis_cli
 
             $block_size = $diff > 8192 ? 8192 : $diff;
 
-            $response .= fread ( $this -> handle, $block_size );
-            $read += $block_size;
+            $chunk = fread ( $this -> handle, $block_size );
+            
+            if($chunk){
+                $chunkLen = strlen($chunk);
+                $read += $chunkLen;
+                $response .= $chunk;
+            } else {
+                fseek( $this -> handle, $read );
+            }
         }
 
         fgets ( $this -> handle );
