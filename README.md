@@ -13,14 +13,12 @@ Raw wrapper for real [Redis] fans. Main advantages:
 * Forces you to actually learn and understand redis data structures and commands.
 
 ## Download
---------------
 You can checkout latest version with:
 
     $ git clone git://github.com/ziogas/PHP-Redis-implementation
 
 
 ## Install
---------------
 To install PHP redis:
 
 * Simply copy redis.php to your site and require it from external script
@@ -52,10 +50,7 @@ var_dump($field);
 More usage examples can be found on tests folder.
 For commands documentation just go directly to [https://redis.io/commands]
 
-* Based on http://redis.io/topics/protocol
-
 ## Running tests
---------------
 To run tests you'll need [phpunit]
 
 Execute:
@@ -69,10 +64,10 @@ Execute:
 4. Push to the branch: `git push origin my-new-feature`
 5. Submit a pull request
 
-Author
--------------
+## Author
 Arminas Zukauskas - arminas@ini.lt
 
+*Based on http://redis.io/topics/protocol*
 
 ## License
 
