@@ -1,20 +1,8 @@
 <?php
 
 /**
- * Very simple Redis implementation, all commands passed in cli format
- * Add commands via cmd ( $command [, $variable1 [, $variable2 ] ] ) method
- * Fire commands via get () o set () methods ( first one will return output, usefull for get operations )
- *
- * Usage:
- * $redis = new redis_cli ( '127.0.0.1', 6379 );
- * $redis->cmd ( 'SET', 'foo', 'bar' )->set ();
- * $foo = $redis->cmd ( 'GET', 'foo' )->get ();
- *
- * $redis->cmd ( 'HSET', 'hash', 'foo', 'bar' )->cmd ( 'HSET', 'hash', 'abc', 'def' )->set ();
- * $vals = $redis->cmd ( 'HVALS', 'hash' )->get ();
- *
- * $redis->cmd ( 'KEYS', 'online*' );
- * $total_online = $redis->get_len ();
+ * Raw redis wrapper, all the commands are passed as-is
+ * More information and usage examples could be found on https://github.com/ziogas/PHP-Redis-implementation
  *
  * Based on http://redis.io/topics/protocol
  */
