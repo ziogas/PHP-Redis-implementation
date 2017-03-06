@@ -308,7 +308,7 @@ class redis_cli
 
             $chunk = fread($this->handle, $block_size);
 
-            if ($chunk) {
+            if ($chunk !== false) {
                 $chunkLen = strlen($chunk);
                 $read += $chunkLen;
                 $response .= $chunk;
