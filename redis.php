@@ -260,13 +260,7 @@ class redis_cli
             $return = array();
 
             for ($i = 0; $i < $size; $i++) {
-                $tmp = trim(fgets($this->handle));
-
-                if ($tmp === '-1') {
-                    $return[] = null;
-                } else {
-                    $return[] = $this->read_bulk_response($tmp);
-                }
+                $return[] = $this->get_response();
             }
         }
 
