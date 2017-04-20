@@ -65,6 +65,39 @@ class commandsTest extends PHPUnit_Framework_TestCase
         $this->assertSame(array(), $emptyList);
     }
 
+    public function testLrange() {
+        $this->redis->cmd('RPUSH', 'range', 'one')
+                    ->cmd('RPUSH', 'range', 'two')
+                    ->cmd('RPUSH', 'range', 'three')
+                    ->set();
+
+        $this->assertSame(array('one'), $this->redis->cmd('LRANGE', 'range', '0', '0')->get());
+        $this->assertSame(array('one', 'two', 'three'), $this->redis->cmd('LRANGE', 'range', '-3', '2')->get());
+        $this->assertSame(array('one', 'two', 'three'), $this->redis->cmd('LRANGE', 'range', '-100', '100')->get());
+        $this->assertSame(array(), $this->redis->cmd('LRANGE', 'range', '5', '10')->get());
+    }
+
+    public function testTransactions() {
+
+        $this->redis->cmd('MULTI')->set();
+        $queued = $this->redis->cmd('SET', 'multi_foo', 'bar')->get();
+	$this->redis->cmd('EXEC')->set();
+
+        $value = $this->redis->cmd('GET', 'multi_foo')->get();
+
+        $this->assertSame('QUEUED', $queued);
+        $this->assertSame('bar', $value);
+    }
+
+    public function testTransactionsSingleLine() {
+
+        $this->redis->cmd('MULTI')->cmd('INCR', 'incr_foo')->cmd('EXPIRE', 'incr_foo', 100)->cmd('EXEC')->set();
+
+        $value = $this->redis->cmd('GET', 'incr_foo')->get();
+
+        $this->assertSame('1', $value);
+    }
+
     protected function tearDown() {
         $keys = array(
             'foo',
@@ -72,6 +105,9 @@ class commandsTest extends PHPUnit_Framework_TestCase
             'online_bar',
             'hash',
             'set_structure',
+            'range',
+            'multi_foo',
+            'incr_foo',
         );
 
         foreach ($keys as $key) {
