@@ -37,7 +37,7 @@ $redis->set_error_function('redis_error');
 
 $redis->cmd('SET', 'foo', 'bar')
       ->cmd('HSET', 'hash', 'field', 'val')
-      ->cmd('EXPIRE', 300, 'foo')
+      ->cmd('EXPIRE', 'foo', 300)
       ->set();
 
 $foo = $redis->cmd('GET', 'foo')->get();
